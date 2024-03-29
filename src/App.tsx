@@ -4,7 +4,7 @@ import { getAnalytics } from "firebase/analytics";
 import ChatComponent from "./component/ChatComp";
 import "./App.scss";
 import ChatUI from "./component/ChatUI";
-
+import { getFirestore } from 'firebase/firestore';
 
 function App() {
     const firebaseConfig = {
@@ -20,6 +20,7 @@ function App() {
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
+    const db = getFirestore(app);
 
     return (
         < >
@@ -31,7 +32,7 @@ function App() {
                     <ChatComponent fbApp={app} fbA={analytics} />
                 </div>
             </div> */}
-            <ChatUI />
+            <ChatUI db={db} />
         </>
     );
 }
