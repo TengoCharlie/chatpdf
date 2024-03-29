@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Analytics } from "firebase/analytics";
 import { FirebaseApp } from "firebase/app";
-import { getFirestore, collection, setDoc, query, where, getDocs, doc } from "firebase/firestore";
+import { getFirestore, collection, setDoc, query, where, getDocs, doc, addDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
@@ -12,6 +12,7 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
 
     const handleFileUpload = async (event: any) => {
         let files = event.target.files;
+        setUploadedFileName([])
         if (files.length > 0) {
             for (let i = 0; i < files.length; i++) {
                 const file = event.target.files[i];
@@ -29,60 +30,63 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
                     setUploadedFileName((prevData) => {
                         return [...prevData, fileName];
                     });
-                    continue;
-                }
 
-                // Upload file to Firebase Storage
-                const storage = getStorage(fbApp);
-                const fileRef = ref(storage, fileName);
+                } else {
+                    // Upload file to Firebase Storage
+                    const storage = getStorage(fbApp);
+                    const fileRef = ref(storage, fileName);
 
-                try {
-                    setUploading(true);
-                    setUploadMessage('Uploading file...');
-                    setErrorMessage('');
+                    try {
+                        setUploading(true);
+                        setUploadMessage('Uploading file...');
+                        setErrorMessage('');
 
-                    await uploadBytes(fileRef, file);
+                        await uploadBytes(fileRef, file);
 
-                    // Get download URL of the uploaded file
-                    const downloadURL = await getDownloadURL(fileRef);
+                        // Get download URL of the uploaded file
+                        const downloadURL = await getDownloadURL(fileRef);
 
-                    // API Call - Upload file and get source ID
-                    const formData = new FormData();
-                    formData.append('file', file, fileName);
+                        // API Call - Upload file and get source ID
+                        const formData = new FormData();
+                        formData.append('file', file, fileName);
 
-                    const options = {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'x-api-key': "sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e", // Replace with your API key
-                        },
-                    };
+                        const options = {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'x-api-key': "sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e", // Replace with your API key
+                            },
+                        };
 
-                    const response = await fetch('https://api.chatpdf.com/v1/sources/add-file', options);
-                    if (!response.ok) {
-                        throw new Error('Failed to upload file to API');
+                        const response = await fetch('https://api.chatpdf.com/v1/sources/add-file', options);
+                        if (!response.ok) {
+                            throw new Error('Failed to upload file to API');
+                        }
+                        const data = await response.json();
+                        console.log('Source ID:', data.sourceId);
+
+                        // Update Firestore with source ID
+                        await addDoc(collection(db, "files"), {
+                            fileName: fileName,
+                            sourceId: data.sourceId,
+                            downloadURL: downloadURL
+                        });
+
+                        setUploadedFileName((prevData) => {
+                            return [...prevData, fileName];
+                        });
+
+                        setUploadMessage('File uploaded successfully');
+                    } catch (error: any) {
+                        console.error('Error:', error.message);
+                        setUploadMessage('Error uploading file');
+                        setErrorMessage('Error uploading file');
+                    } finally {
+                        setUploading(false);
                     }
-                    const data = await response.json();
-                    console.log('Source ID:', data.sourceId);
-
-                    // Update Firestore with source ID
-                    await setDoc(doc(db, "files", fileName), {
-                        sourceId: data.sourceId,
-                        downloadURL: downloadURL
-                    });
-
-                    setUploadedFileName((prevData) => {
-                        return [...prevData, fileName];
-                    });
-
-                    setUploadMessage('File uploaded successfully');
-                } catch (error: any) {
-                    console.error('Error:', error.message);
-                    setUploadMessage('Error uploading file');
-                    setErrorMessage('Error uploading file');
-                } finally {
-                    setUploading(false);
                 }
+
+
             }
         }
     };
