@@ -1,28 +1,27 @@
-import styles from './App.module.scss';
+import FileUpload from "./component/fileUpload";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+
 
 function App() {
+const firebaseConfig = {
+  apiKey: "AIzaSyAOEx3MV_orlQ83hUGF2wmpr-FklwZsiwA",
+  authDomain: "chatpdf-11.firebaseapp.com",
+  projectId: "chatpdf-11",
+  storageBucket: "chatpdf-11.appspot.com",
+  messagingSenderId: "713680529851",
+  appId: "1:713680529851:web:a07cc4d25c3d8664463c9e",
+  measurementId: "G-KGQW2R263J"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
     return (
-        <div className={styles.App}>
-            <h2>Welcome to your App Component 🎉</h2>
-            <span>
-                Double click to edit App component
-                <br />
-                &amp; drag here elements from + Add <b>Elements</b> Panel
-            </span>
-            <p
-                style={{
-                    fontSize: '12px',
-                    marginTop: '80px',
-                    display: 'flex',
-                    gap: '3px',
-                    justifyContent: 'center',
-                }}
-            >
-                This project is using <img src="/src/assets/vite.svg" width="12" />+
-                <img src="/src/assets/typescript.svg" width="12" />
-                Visit vitejs.dev to learn more.
-            </p>
-        </div>
+        < >
+           <FileUpload fbApp={app} fbA={analytics} />
+        </>
     );
 }
 
