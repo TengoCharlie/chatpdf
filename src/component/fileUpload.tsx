@@ -8,7 +8,7 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [uploadedFileName, setUploadedFileName] = useState(['']);
+    const [uploadedFileName, setUploadedFileName] = useState<String[]>([]);
 
     const handleFileUpload = async (event: any) => {
         let files = event.target.files;
@@ -95,6 +95,7 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
         <div>
             <input type="file" onChange={handleFileUpload} multiple disabled={uploading} />
             {uploading && <p>{uploadMessage}</p>}
+            <p> Uploaded {uploadedFileName.length} files</p>
             {uploadedFileName.length > 0 && (
                 <ul>
                     {uploadedFileName.map((fileName, index) => (
