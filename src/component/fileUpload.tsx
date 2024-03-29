@@ -1,72 +1,103 @@
 import { useState } from 'react';
 import { Analytics } from "firebase/analytics";
 import { FirebaseApp } from "firebase/app";
-import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { getFirestore, collection, setDoc, query, where, getDocs, doc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [uploadedFileName, setUploadedFileName] = useState(['']);
 
     const handleFileUpload = async (event: any) => {
-        const file = event.target.files[0];
-        const fileName = file.name;
+        let files = event.target.files;
+        if (files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                const file = event.target.files[i];
+                const fileName = file.name;
 
-        // Query Firestore to check for duplicates
-        const db = getFirestore(fbApp);
-        const filesRef = collection(db, "files");
-        const q = query(filesRef, where("fileName", "==", fileName));
-        const querySnapshot = await getDocs(q);
+                // Check if file already exists in Firestore
+                const db = getFirestore(fbApp);
+                const filesRef = collection(db, "files");
+                const q = query(filesRef, where("fileName", "==", fileName));
+                const querySnapshot = await getDocs(q);
 
-        if (!querySnapshot.empty) {
-            console.log("File with the same name already exists.");
-            // Handle duplicate file name, e.g., notify the user or prevent the upload
-            setErrorMessage('File with the same name already exists.');
-            return;
-        }
+                if (!querySnapshot.empty) {
+                    console.log("File with the same name already exists.");
+                    setErrorMessage('File with the same name already exists.');
+                    setUploadedFileName((prevData) => {
+                        return [...prevData, fileName];
+                    });
+                    continue;
+                }
 
-        const formData = new FormData();
-        formData.append('file', file, fileName);
+                // Upload file to Firebase Storage
+                const storage = getStorage(fbApp);
+                const fileRef = ref(storage, fileName);
 
-        const options = {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'x-api-key': "sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e", // Replace with your API key
-            },
-        };
+                try {
+                    setUploading(true);
+                    setUploadMessage('Uploading file...');
+                    setErrorMessage('');
 
-        try {
-            setUploading(true);
-            setUploadMessage('Uploading file...');
-            setErrorMessage('');
+                    await uploadBytes(fileRef, file);
 
-            const response = await fetch('https://api.chatpdf.com/v1/sources/add-file', options);
-            if (!response.ok) {
-                throw new Error('Failed to upload file');
+                    // Get download URL of the uploaded file
+                    const downloadURL = await getDownloadURL(fileRef);
+
+                    // API Call - Upload file and get source ID
+                    const formData = new FormData();
+                    formData.append('file', file, fileName);
+
+                    const options = {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'x-api-key': "sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e", // Replace with your API key
+                        },
+                    };
+
+                    const response = await fetch('https://api.chatpdf.com/v1/sources/add-file', options);
+                    if (!response.ok) {
+                        throw new Error('Failed to upload file to API');
+                    }
+                    const data = await response.json();
+                    console.log('Source ID:', data.sourceId);
+
+                    // Update Firestore with source ID
+                    await setDoc(doc(db, "files", fileName), {
+                        sourceId: data.sourceId,
+                        downloadURL: downloadURL
+                    });
+
+                    setUploadedFileName((prevData) => {
+                        return [...prevData, fileName];
+                    });
+
+                    setUploadMessage('File uploaded successfully');
+                } catch (error: any) {
+                    console.error('Error:', error.message);
+                    setUploadMessage('Error uploading file');
+                    setErrorMessage('Error uploading file');
+                } finally {
+                    setUploading(false);
+                }
             }
-            const data = await response.json();
-            console.log('Source ID:', data.sourceId);
-
-            await addDoc(collection(db, "files"), {
-                fileName: fileName,
-                sourceId: data.sourceId
-            });
-
-            setUploadMessage('File uploaded successfully');
-        } catch (error: any) {
-            console.error('Error:', error.message);
-            setUploadMessage('Error uploading file');
-            setErrorMessage('Error uploading file');
-        } finally {
-            setUploading(false);
         }
     };
 
     return (
         <div>
-            <input type="file" onChange={handleFileUpload} disabled={uploading} />
+            <input type="file" onChange={handleFileUpload} multiple disabled={uploading} />
             {uploading && <p>{uploadMessage}</p>}
+            {uploadedFileName.length > 0 && (
+                <ul>
+                    {uploadedFileName.map((fileName, index) => (
+                        <li key={index}>{fileName}</li>
+                    ))}
+                </ul>
+            )}
             {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
         </div>
     );
