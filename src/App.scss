@@ -136,9 +136,13 @@ html {
   overflow: hidden;
 }
 
-.conversation-area,
+.conversation-area {
+  width: 300px;
+  flex-shrink: 0;
+}
+
 .detail-area {
-  width: 340px;
+  width: 600px;
   flex-shrink: 0;
 }
 

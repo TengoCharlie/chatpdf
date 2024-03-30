@@ -3,21 +3,15 @@ import HeaderComponent from './Header.component';
 import ConversationAreaComponent from './ConversationalArea.Component';
 import ChatAreaComponent from './ChatArea.component';
 import DetailAreaComponent from './DetailedArea.component';
-import {
-    Firestore,
-    addDoc,
-    collection,
-    getDocs,
-    getFirestore,
-    query,
-    where,
-} from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
+import { Firestore, addDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 
 export default function ChatUI({ db, storage }: { db: Firestore; storage: FirebaseStorage }) {
     // For List Fetch
     const [fileList, setFileList] = useState<any>([]);
     const [selectedFileId, setSelectedFileId] = useState('');
+    const [selectedFileUrl, setSelectedFileUrl] = useState('');
+    const [selectedFileName, setSelectedFileName] = useState('');
 
     // For File Upload
     const [uploading, setUploading] = useState(false);
@@ -41,6 +35,24 @@ export default function ChatUI({ db, storage }: { db: Firestore; storage: Fireba
     useEffect(() => {
         fetchItems();
     }, [uploading]);
+
+    useEffect(() => {
+        setSelectedFileUrl(() => {
+            return (
+                fileList.find((data: any) => {
+                    return data.sourceId === selectedFileId;
+                })?.downloadURL || ''
+            );
+        });
+
+        setSelectedFileName(() => {
+            return (
+                fileList.find((data: any) => {
+                    return data.sourceId === selectedFileId;
+                })?.fileName || ''
+            );
+        });
+    }, [selectedFileId]);
 
     const handleFileUpload = async (event: any) => {
         let files = event.target.files;
@@ -128,6 +140,7 @@ export default function ChatUI({ db, storage }: { db: Firestore; storage: Fireba
         <>
             <div className="app">
                 <HeaderComponent
+                    selectedFileUrl={selectedFileUrl}
                     handleFileUpload={handleFileUpload}
                     uploading={uploading}
                     uploadMessage={uploadMessage}
@@ -143,7 +156,11 @@ export default function ChatUI({ db, storage }: { db: Firestore; storage: Fireba
                     />
 
                     <ChatAreaComponent />
-                    <DetailAreaComponent />
+                    <DetailAreaComponent
+                        selectedFileUrl={selectedFileUrl}
+                        selectedFileName={selectedFileName}
+                        selectedFileId={selectedFileId}
+                    />
                 </div>
             </div>
         </>
