@@ -1,8 +1,17 @@
 import { useState } from 'react';
-import { Analytics } from "firebase/analytics";
-import { FirebaseApp } from "firebase/app";
-import { getFirestore, collection, setDoc, query, where, getDocs, doc, addDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { Analytics } from 'firebase/analytics';
+import { FirebaseApp } from 'firebase/app';
+import {
+    getFirestore,
+    collection,
+    setDoc,
+    query,
+    where,
+    getDocs,
+    doc,
+    addDoc,
+} from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
     const [uploading, setUploading] = useState(false);
@@ -12,7 +21,7 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
 
     const handleFileUpload = async (event: any) => {
         let files = event.target.files;
-        setUploadedFileName([])
+        setUploadedFileName([]);
         if (files.length > 0) {
             for (let i = 0; i < files.length; i++) {
                 const file = event.target.files[i];
@@ -20,17 +29,16 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
 
                 // Check if file already exists in Firestore
                 const db = getFirestore(fbApp);
-                const filesRef = collection(db, "files");
-                const q = query(filesRef, where("fileName", "==", fileName));
+                const filesRef = collection(db, 'files');
+                const q = query(filesRef, where('fileName', '==', fileName));
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
-                    console.log("File with the same name already exists.");
+                    console.log('File with the same name already exists.');
                     setErrorMessage('File with the same name already exists.');
                     setUploadedFileName((prevData) => {
                         return [...prevData, fileName];
                     });
-
                 } else {
                     // Upload file to Firebase Storage
                     const storage = getStorage(fbApp);
@@ -54,11 +62,14 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
                             method: 'POST',
                             body: formData,
                             headers: {
-                                'x-api-key': "sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e", // Replace with your API key
+                                'x-api-key': 'sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e', // Replace with your API key
                             },
                         };
 
-                        const response = await fetch('https://api.chatpdf.com/v1/sources/add-file', options);
+                        const response = await fetch(
+                            'https://api.chatpdf.com/v1/sources/add-file',
+                            options
+                        );
                         if (!response.ok) {
                             throw new Error('Failed to upload file to API');
                         }
@@ -66,10 +77,10 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
                         console.log('Source ID:', data.sourceId);
 
                         // Update Firestore with source ID
-                        await addDoc(collection(db, "files"), {
+                        await addDoc(collection(db, 'files'), {
                             fileName: fileName,
                             sourceId: data.sourceId,
-                            downloadURL: downloadURL
+                            downloadURL: downloadURL,
                         });
 
                         setUploadedFileName((prevData) => {
@@ -85,8 +96,6 @@ function FileUpload({ fbApp, fbA }: { fbApp: FirebaseApp; fbA: Analytics }) {
                         setUploading(false);
                     }
                 }
-
-
             }
         }
     };

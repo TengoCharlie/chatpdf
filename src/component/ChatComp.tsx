@@ -3,7 +3,6 @@ import { Analytics } from 'firebase/analytics';
 import { FirebaseApp } from 'firebase/app';
 import { collection, getDocs, getFirestore, query } from 'firebase/firestore';
 
-
 interface Message {
     content: string;
     sentByUser: boolean;
@@ -15,19 +14,17 @@ export default function ChatComponent({ fbApp, fbA }: { fbApp: FirebaseApp; fbA:
     const [fileList, setFileList] = useState<any>([]);
     const [selectedFileId, setSelectedFileId] = useState('');
 
-
     useEffect(() => {
         const fetchItems = async () => {
             const db = getFirestore(fbApp);
             const itemsCollection = collection(db, 'files'); // Replace 'your-collection-name' with your actual collection name
             const itemsSnapshot = await getDocs(itemsCollection);
-            const itemsList = itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const itemsList = itemsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
             setFileList(itemsList);
         };
 
         fetchItems();
-    }, [])
-
+    }, []);
 
     const handleMessageSend = async () => {
         if (newMessage.trim() === '') return; // Ignore empty messages
@@ -45,17 +42,17 @@ export default function ChatComponent({ fbApp, fbA }: { fbApp: FirebaseApp; fbA:
             sourceId: selectedFileId,
             messages: [
                 {
-                    role: "user",
+                    role: 'user',
                     content: newMessage,
                 },
             ],
         };
 
         const options = {
-            method: "POST",
+            method: 'POST',
             headers: {
-                "x-api-key": "sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e",
-                "Content-Type": "application/json",
+                'x-api-key': 'sec_SnszMTp0i4rLJXZF9otw70LxQdXQuT6e',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify(data),
         };
@@ -64,13 +61,13 @@ export default function ChatComponent({ fbApp, fbA }: { fbApp: FirebaseApp; fbA:
             const response = await fetch('https://api.chatpdf.com/v1/chats/message', options);
 
             const data = await response.json();
-            const responseMessage = data.content
+            const responseMessage = data.content;
 
             setMessages((prev) => {
-                return [...prev, { content: responseMessage, sentByUser: false }]
+                return [...prev, { content: responseMessage, sentByUser: false }];
             });
         } catch (error) {
-            console.log("something went wrong")
+            console.log('something went wrong');
         }
     };
 
@@ -81,14 +78,23 @@ export default function ChatComponent({ fbApp, fbA }: { fbApp: FirebaseApp; fbA:
                 {fileList.length > 0 && (
                     <ul>
                         {fileList.map((data: any, index: any) => (
-                            <li style={{ cursor: 'pointer' }} key={index} onClick={() => setSelectedFileId(data.sourceId)}>{data.fileName}</li>
+                            <li
+                                style={{ cursor: 'pointer' }}
+                                key={index}
+                                onClick={() => setSelectedFileId(data.sourceId)}
+                            >
+                                {data.fileName}
+                            </li>
                         ))}
                     </ul>
                 )}
             </div>
             <div className="messages-container">
                 {messages.map((message, index) => (
-                    <div key={index} className={message.sentByUser ? 'sent-message' : 'received-message'}>
+                    <div
+                        key={index}
+                        className={message.sentByUser ? 'sent-message' : 'received-message'}
+                    >
                         {message.content}
                     </div>
                 ))}
