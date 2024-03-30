@@ -155,7 +155,11 @@ export default function ChatUI({ db, storage }: { db: Firestore; storage: Fireba
                         setSelectedFileId={setSelectedFileId}
                     />
 
-                    <ChatAreaComponent />
+                    <ChatAreaComponent
+                        selectedFileUrl={selectedFileUrl}
+                        selectedFileName={selectedFileName}
+                        selectedFileId={selectedFileId}
+                    />
                     <DetailAreaComponent
                         selectedFileUrl={selectedFileUrl}
                         selectedFileName={selectedFileName}
